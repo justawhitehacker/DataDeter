@@ -61,7 +61,7 @@ Players.PlayerAdded:Connect(function(plr)
             playerData:ForceSave(datas)
         end)
       
-        playerData:ReleaseSessionLock(owner)
+        playerData:ReleaseSessionLock(ownerId)
         -- callbacks action for OnRelease should be called.
 
         if not ok then warn("saving failed due to: " .. err) end
