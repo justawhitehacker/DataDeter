@@ -57,9 +57,14 @@ Players.PlayerAdded:Connect(function(plr)
     task.spawn(function()
         for i = 1, data_counts do
             local obj = datas.objects[i]
+
+            local pos = Vector3.new(obj.pos.x,    obj.pos.y,    obj.pos.z)
+            local rVec = Vector3.new(obj.rightvec.x,    obj.rightvec.y,    obj.rightvec.z)
+            local uVec = Vector3.new(obj.upvec.x,    obj.upvec.y,    obj.upvec.z)
+                    
             local part = Instance.new("Part")
             part.Name = obj.name
-            part.CFrame = CFrame.new(obj.cframe.z, obj.cframe.y, obj.cframe.z)
+            part.CFrame = CFrame.fromMatrix(pos, rVec, uVec)
             part.Anchored = true
             part.CanCollide = true
             part.Color = Color3.fromRGB(obj.color.r, obj.color.g, obj.color.b)
@@ -68,20 +73,17 @@ Players.PlayerAdded:Connect(function(plr)
         end
 
         local previousPlace = datas.previous_place_cframe
+
+        local pos = Vector3.new(previousPlace.x,    previousPlace.y,    previousPlace.z)        
+        
+        local rightVec = Vector3.new(previousPlace.right_vec.x,    previousPlace.right_vec.y,    previousPlace.right_vec.z)
+        local upVec = Vector3.new(previousPlace.up_vec.x,    previousPlace.up_vec.y,    previousPlace.up_vec.z)
+
+        -- roblox automatically calculating for cross product, but i did manual instead
+        local lookVec = rightVec:Cross(upVec).Unit -- i used cross product then normalize vector manually, you can skip this line
+                
         -- base translations
-        baseModel:PivotTo(CFrame.fromMatrix(previousPlace.x, previousPlace.y, previousPlace.z, 
-                        previousPlace.right_vec.x,
-                        previousPlace.right_vec.y,
-                        previousPlace.right_vec.z,
-
-                        previousPlace.up_vec.x,
-                        previousPlace.up_vec.y,
-                        previousPlace.up_vec.z,
-
-                        -previousPlace.look_vec.x,
-                        -previousPlace.look_vec.y,
-                        -previousPlace.look_vec.z
-                    ))
+        baseModel:PivotTo(CFrame.fromMatrix(pos, rightVec, upVec, lookVec))
     end)
 
     -- at best counter
@@ -89,16 +91,4 @@ Players.PlayerAdded:Connect(function(plr)
     playerData:SmartCleanCache(15)
 end)
 
--- fires when player is leaving the game
-Players.PlayerRemoving:Connect(function(plr)
-    local user = "session_data->" .. plr.UserId
-    local playerData = plrData:GetPlayerData(user)
-
-    -- callback if failed
-    playerData:FailedOver(function(err)
-        warn("DataDeter's error expected: " .. err)
-    end)
-
-    -- lanjut nanti lek, mau tidur dulu
-end)
 
