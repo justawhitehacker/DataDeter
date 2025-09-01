@@ -1,4 +1,7 @@
 -- RaihanMan18
+-- template script, free to use and custom
+
+-- example.projectsimple.lua
 
 -- i made this example, you can copy this example code and custom your own
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
