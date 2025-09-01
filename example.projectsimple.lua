@@ -6,7 +6,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 
 local Events = ReplicatedStorage:WaitForChild("Events")
-local BlockPlaced = Events:FindFirstChild("BlockPlacedEvent")
+local BlockPlaced = Events:WaitForChild("BlockPlacedEvent")
+local Objects = RepliatedStorage:WaitForChild("Objects")
 
 local mods = ServerStorage:WaitForChild("Modules")
 local DataDeter = require(mods.DataDeter)
@@ -114,20 +115,33 @@ Players.PlayerAdded:Connect(function(plr)
 end)
 
 -- block placed event
-BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal, targetHitInstance)
+BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal, targetHitInstance, rotationX, rotationY)
     local user = "session_data->" .. player.UserId
     local playerData = plrData:GetPlayerData(user)
 
+    local ok, datas = pcall(function()
+        return playerData:Get(player)
+    end)
+    if not ok or type(datas) ~= "table" then
+        warn("data cannot be obtained")
+        datas = {}
+    end
+
+    local objCount = datas.obj_count and tonumber(datas.obj_count) or 0
+    local objs = datas.objects or {}
+
+    local obj = objs[objCount + 1]
+
     local function snapToGrid(pos, size)
-        return Vector3.new(
-            math.floor(pos.X / size.X + 0.5) * size.X,
-            math.floor(pos.Y / size.Y + 0.5) * size.Y,
-            math.floor(pos.Z / size.Z + 0.5) * size.Z
-        )
+        return math.floor(pos / size + 0.5) * size
     end
 
     local function normalizePos(normal, size)
-        -- lanjut nanti lek
+        return Vector3.new(
+            (normal.X ~= 0) and (normal.X * (size.X / 2)) or 0,
+            (normal.Y ~= 0) and (normal.Y * (size.Y / 2)) or 0,
+            (normal.Z ~= 0) and (normal.Z * (size.Z / 2)) or 0
+        )
     end
 
     playerData:FailedOver(function(err)
@@ -138,17 +152,57 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
         print("data saved after block placed!")
     end)
 
-    local token, signature = playerData:StartSession(plr)
+    local blockUnclone = Objects:FindFirstChild("Block")
+    if not blockUnclone then return end
+
+    local modelBase = workspace.WorldBlock[player.Name .. "_base"]
+        
+    local block = blockUnclone:Clone()
+    block.Parent = modelBase
+    block.Name = block.Name .. tostring(objCount)
+    block.Color = Color3.fromRGB(1, 0, 0)
+    block.Size = Vector3.new(3, 3, 3)
+    
+    local rotate = CFrame.Angles(math.rad(rotationX or 0), math.rad(rotationY or 0), 0)
+    targetHitNormal = normalizePos(targetHitNormal, block.Size)
+    targetHitPos = Vector3.new(
+        snapToGrid(targetHitPos.X + targetHitNormal.X, block.Size.X / 2),
+        snapToGrid(targetHitPos.Y + targetHitNormal.Y, block.Size.Y / 2),
+        snapToGrid(targetHitPos.Z + targetHitNormal.Z, block.Size.Z / 2)
+    )
+        
+    block.CFrame = CFrame.new(targetHitPos) * rotate
+
+    obj.color = { r = block.Color.R, g = block.Color.G, b = block.Color.B }
+    obj.size = { x = block.Size.X, y = block.Size.Y, z = block.Size.Z }
+    obj.pos = { x = block.Position.X, y = block.Position.Y, z = block.Position.Z }
+    obj.rightvec = { x = block.CFrame.RightVector.X, y = block.CFrame.RightVector.Y, z = block.CFrame.RightVector.Z }
+    obj.upvec = { x = block.CFrame.UpVector.X, y = block.CFrame.UpVector.Y, z = block.CFrame.UpVector.Z }
+
+    local prevPlace = objs.previous_place_cframe or {}
+    local pivot = modelBase:GetPivot()
+
+    objs.x = pivot.Position.X
+    objs.y = pivot.Position.Y
+    objs.z = pivot.Position.Z
+
+    objs.right_vec = { x = pivot.RightVector.X, y = pivot.RightVector.Y, z = pivot.RightVector.Z }
+    objs.up_vec = { x = pivot.UpVector.X, y = pivot.UpVector.Y, z = pivot.UpVector.Z }
+    
+    datas.obj_count = datas.obj_count + 1 
+    
+
+    local token, signature = playerData:StartSession(player)
     local okLock, ownerId = playerData:AcquireSessionLock(user, 5)
     if okLock then
         local ok, err = pcall(function()
-            playerData:SaveWithToken(token, ..., signature)
+            playerData:SaveWithToken(token, datas, signature)
         end)
         if not ok then warn("data failed to save due to: " .. err) end
         playerData:ReleaseSessionLock(ownerId)
         playerData:EndSession(token)
     else
-        warn("session lock failed due")
+        warn("session lock failed")
     end
 end)
 
