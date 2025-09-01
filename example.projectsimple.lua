@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
+local workspace = game:GetService("Workspace")
 
 local Events = ReplicatedStorage:WaitForChild("Events")
 local BlockPlaced = Events:WaitForChild("BlockPlacedEvent")
@@ -58,9 +59,10 @@ Players.PlayerAdded:Connect(function(plr)
         local countBatch = 0
         for i = 1, objectsCount do
             local obj = objs[i]
-            if not obj or typeof(obj) ~= "table" then continue end
-
-            local pos = Vector3.new(obj.pos and obj.pos.x or 0,    obj.pos and obj.pos.y or 0,    obj.pos and obj.pos.z or 0)
+        if not obj or typeof(obj) ~= "table" then
+            -- prevents unsupported environtment, instead using "continue"
+        else
+                  local pos = Vector3.new(obj.pos and obj.pos.x or 0,    obj.pos and obj.pos.y or 0,    obj.pos and obj.pos.z or 0)
             local rVec = Vector3.new(obj.rightvec and obj.rightvec.x or 1,    obj.rightvec and obj.rightvec.y or 0,    obj.rightvec and obj.rightvec.z or 0)
             local uVec = Vector3.new(obj.upvec and obj.upvec.x or 0,    obj.upvec and obj.upvec.y or 1,    obj.upvec and obj.upvec.z or 0)
                     
@@ -81,6 +83,9 @@ Players.PlayerAdded:Connect(function(plr)
                 task.wait()
                 countBatch = 0 -- reset counter
             end
+        end
+
+            
         end
 
         local previousPlace = datas.previous_place_cframe
@@ -130,12 +135,12 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
         return
     end
 
-    if typeof(rotationX) ~= "number" or (rotationX < -90 and rotationX > 90) then
+    if typeof(rotationX) ~= "number" or (rotationX < -90 or rotationX > 90) then
         return
     end
     rotationX = math.floor(rotationX)
 
-    if typeof(rotationY) ~= "number" or (rotationY < -90 and rotationY > 90) then
+    if typeof(rotationY) ~= "number" or (rotationY < -90 or rotationY > 90) then
         return
     end
     rotationY = math.floor(rotationY)
