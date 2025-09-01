@@ -132,6 +132,7 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
     local objs = datas.objects or {}
 
     local obj = objs[objCount + 1] or {}
+    objs[objCount + 1] = obj
 
     local function snapToGrid(pos, size)
         return math.floor(pos / size + 0.5) * size
@@ -156,13 +157,13 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
     local blockUnclone = Objects:FindFirstChild("Block")
     if not blockUnclone then return end
 
-    local modelBase = workspace.WorldBlock[player.Name .. "_base"]
+    local modelBase = workspace.WorldBlock:FindFirstChild(player.Name .. "_base")
     if not modelBase then return end
         
     local block = blockUnclone:Clone()
     block.Parent = modelBase
     block.Name = block.Name .. tostring(objCount)
-    block.Color = Color3.fromRGB(1, 0, 0)
+    block.Color = Color3.fromRGB(255, 0, 0)
     block.Size = Vector3.new(3, 3, 3)
     
     local rotate = CFrame.Angles(math.rad(rotationX or 0), math.rad(rotationY or 0), 0)
@@ -181,7 +182,7 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
     obj.rightvec = { x = block.CFrame.RightVector.X, y = block.CFrame.RightVector.Y, z = block.CFrame.RightVector.Z }
     obj.upvec = { x = block.CFrame.UpVector.X, y = block.CFrame.UpVector.Y, z = block.CFrame.UpVector.Z }
 
-    local prevPlace = objs.previous_place_cframe or {}
+    local prevPlace = datas.previous_place_cframe or {}
     local pivot = modelBase:GetPivot()
 
     prevPlace.x = pivot.Position.X
