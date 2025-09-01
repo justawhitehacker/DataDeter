@@ -11,8 +11,9 @@ local Objects = ReplicatedStorage:WaitForChild("Objects")
 
 local mods = ServerStorage:WaitForChild("Modules")
 local DataDeter = require(mods.DataDeter)
+local sec = require(mods.Secret)
 
-DataDeter.SetServerSecret(os.getenv("secret"), 75) -- global security_level to 75, set the server secret
+DataDeter.SetServerSecret(sec, 75) -- global security_level to 75, set the server secret
 
 local plrData = DataDeter.InDataInfo("PlayersData", "global", {
     security_level = 75,
@@ -115,8 +116,31 @@ Players.PlayerAdded:Connect(function(plr)
     playerData:SmartCleanCache(15)
 end)
 
+Players.PlayerRemoving:Connect(function(plr)
+    local user = "session_data->" .. plr.UserId
+    local playerData = plrData:GetPlayerData(user)
+
+    if playerData then
+        playerData:Flush()
+    end
+end)
+
 -- block placed event
 BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal, targetHitInstance, rotationX, rotationY)
+    if typeof(targetHitPos) ~= "Vector3" or typeof(targetHitNormal) ~= "Vector3" or typeof(targetHitInstance) ~= "Instance" then
+        return
+    end
+
+    if typeof(rotationX) ~= "number" or (rotationX >= 45 and rotationX <= 90) then
+        return
+    end
+    rotationX = math.floor(rotationX)
+
+    if typeof(rotationY) ~= "number" or (rotationY >= 45 and rotationY <= 90) then
+        return
+    end
+    rotationY = math.floor(rotationY)
+        
     local user = "session_data->" .. player.UserId
     local playerData = plrData:GetPlayerData(user)
 
