@@ -25,8 +25,7 @@ local plrData = DataDeter.InDataInfo("PlayersData", "global", {
 
 -- fires when player is joining the game
 Players.PlayerAdded:Connect(function(plr)
-    local user = "session_data->" .. plr.UserId
-    local playerData = plrData:GetPlayerData(user)
+    local playerData = plrData:GetPlayerData(plr.UserId)
 
     -- callback if failed
     playerData:FailedOver(function(err)
@@ -100,11 +99,12 @@ Players.PlayerAdded:Connect(function(plr)
     end)
 
     -- saving the loaded base, to prevent data loss
-    local lockSuccess, ownerId = playerData:AcquireSessionLock(user, 5)
+    local lockSuccess, ownerId = playerData:AcquireSessionLock(nil, 5)
+    local token, signature = playerData:StartSession(plr)
     if lockSuccess then
         local ok, err = pcall(function()
             -- forcing save data, serialize objects
-            playerData:ForceSave(datas)        
+            playerData:SaveWithToken(token, datas, signature)
         end)
         playerData:ReleaseSessionLock(ownerId)
         if not ok then warn("data cannot be saved: " .. err) end
@@ -117,8 +117,7 @@ Players.PlayerAdded:Connect(function(plr)
 end)
 
 Players.PlayerRemoving:Connect(function(plr)
-    local user = "session_data->" .. plr.UserId
-    local playerData = plrData:GetPlayerData(user)
+    local playerData = plrData:GetPlayerData(plr.UserId)
 
     if playerData then
         playerData:Flush()
@@ -131,18 +130,17 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
         return
     end
 
-    if typeof(rotationX) ~= "number" or (rotationX >= 45 and rotationX <= 90) then
+    if typeof(rotationX) ~= "number" or (rotationX < -90 and rotationX > 90) then
         return
     end
     rotationX = math.floor(rotationX)
 
-    if typeof(rotationY) ~= "number" or (rotationY >= 45 and rotationY <= 90) then
+    if typeof(rotationY) ~= "number" or (rotationY < -90 and rotationY > 90) then
         return
     end
     rotationY = math.floor(rotationY)
         
-    local user = "session_data->" .. player.UserId
-    local playerData = plrData:GetPlayerData(user)
+    local playerData = plrData:GetPlayerData(player.UserId)
 
     local ok, datas = pcall(function()
         return playerData:Get(player)
