@@ -71,7 +71,7 @@ Players.PlayerAdded:Connect(function(plr)
             part.CanCollide = true
             if obj.color and typeof(obj.color) == "table" then
                 local color = obj.color
-                part.Color = Color3.fromRGB(color.r or 255, color.g or 0, color.b or 0)
+                part.Color = Color3.new(color.r or 1, color.g or 0, color.b or 0)
             end
             part.Size = Vector3.new(obj.size and obj.size.x or 1, obj.size and obj.size.y or 1, obj.size and obj.size.z or 1)
             part.Parent = baseModel
@@ -163,7 +163,7 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
     local block = blockUnclone:Clone()
     block.Parent = modelBase
     block.Name = block.Name .. tostring(objCount)
-    block.Color = Color3.fromRGB(255, 0, 0)
+    block.Color = Color3.new(1, 0, 0)
     block.Size = Vector3.new(3, 3, 3)
     
     local rotate = CFrame.Angles(math.rad(rotationX or 0), math.rad(rotationY or 0), 0)
