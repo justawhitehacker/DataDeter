@@ -5,6 +5,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 
+local Events = ReplicatedStorage:WaitForChild("Events")
+local BlockPlaced = Events:FindFirstChild("BlockPlacedEvent")
+
 local mods = ServerStorage:WaitForChild("Modules")
 local DataDeter = require(mods.DataDeter)
 
@@ -108,6 +111,45 @@ Players.PlayerAdded:Connect(function(plr)
 
     -- at best counter
     playerData:SmartCleanCache(15)
+end)
+
+-- block placed event
+BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal, targetHitInstance)
+    local user = "session_data->" .. player.UserId
+    local playerData = plrData:GetPlayerData(user)
+
+    local function snapToGrid(pos, size)
+        return Vector3.new(
+            math.floor(pos.X / size.X + 0.5) * size.X,
+            math.floor(pos.Y / size.Y + 0.5) * size.Y,
+            math.floor(pos.Z / size.Z + 0.5) * size.Z
+        )
+    end
+
+    local function normalizePos(normal, size)
+        -- lanjut nanti lek
+    end
+
+    playerData:FailedOver(function(err)
+        warn("player data error happened: " .. err)
+    end)
+
+    playerData:OnSave(function()
+        print("data saved after block placed!")
+    end)
+
+    local token, signature = playerData:StartSession(plr)
+    local okLock, ownerId = playerData:AcquireSessionLock(user, 5)
+    if okLock then
+        local ok, err = pcall(function()
+            playerData:SaveWithToken(token, ..., signature)
+        end)
+        if not ok then warn("data failed to save due to: " .. err) end
+        playerData:ReleaseSessionLock(ownerId)
+        playerData:EndSession(token)
+    else
+        warn("session lock failed due")
+    end
 end)
 
 
