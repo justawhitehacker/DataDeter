@@ -206,6 +206,7 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
         
     block.CFrame = CFrame.new(targetHitPos) * rotate
 
+    obj.name = tostring(block.Name)
     obj.color = { r = block.Color.R, g = block.Color.G, b = block.Color.B }
     obj.size = { x = block.Size.X, y = block.Size.Y, z = block.Size.Z }
     obj.pos = { x = block.Position.X, y = block.Position.Y, z = block.Position.Z }
