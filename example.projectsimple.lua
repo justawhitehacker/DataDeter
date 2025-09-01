@@ -7,12 +7,12 @@ local Players = game:GetService("Players")
 
 local Events = ReplicatedStorage:WaitForChild("Events")
 local BlockPlaced = Events:WaitForChild("BlockPlacedEvent")
-local Objects = RepliatedStorage:WaitForChild("Objects")
+local Objects = ReplicatedStorage:WaitForChild("Objects")
 
 local mods = ServerStorage:WaitForChild("Modules")
 local DataDeter = require(mods.DataDeter)
 
-DataDeter.SetServerSecret("TOP-SECRET", 75) -- global security_level to 75, set the server secret
+DataDeter.SetServerSecret(os.getenv("secret"), 75) -- global security_level to 75, set the server secret
 
 local plrData = DataDeter.InDataInfo("PlayersData", "global", {
     security_level = 75,
@@ -58,6 +58,7 @@ Players.PlayerAdded:Connect(function(plr)
         local countBatch = 0
         for i = 1, objectsCount do
             local obj = objs[i]
+            if not obj or typeof(obj) ~= "table" then continue end
 
             local pos = Vector3.new(obj.pos and obj.pos.x or 0,    obj.pos and obj.pos.y or 0,    obj.pos and obj.pos.z or 0)
             local rVec = Vector3.new(obj.rightvec and obj.rightvec.x or 1,    obj.rightvec and obj.rightvec.y or 0,    obj.rightvec and obj.rightvec.z or 0)
@@ -70,7 +71,7 @@ Players.PlayerAdded:Connect(function(plr)
             part.CanCollide = true
             if obj.color and typeof(obj.color) == "table" then
                 local color = obj.color
-                part.Color = Color3.fromRGB(color.r, color.g, color.b)
+                part.Color = Color3.fromRGB(color.r or 255, color.g or 0, color.b or 0)
             end
             part.Size = Vector3.new(obj.size and obj.size.x or 1, obj.size and obj.size.y or 1, obj.size and obj.size.z or 1)
             part.Parent = baseModel
@@ -122,7 +123,7 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
     local ok, datas = pcall(function()
         return playerData:Get(player)
     end)
-    if not ok or type(datas) ~= "table" then
+    if not ok or typeof(datas) ~= "table" then
         warn("data cannot be obtained")
         datas = {}
     end
@@ -130,7 +131,7 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
     local objCount = datas.obj_count and tonumber(datas.obj_count) or 0
     local objs = datas.objects or {}
 
-    local obj = objs[objCount + 1]
+    local obj = objs[objCount + 1] or {}
 
     local function snapToGrid(pos, size)
         return math.floor(pos / size + 0.5) * size
@@ -156,6 +157,7 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
     if not blockUnclone then return end
 
     local modelBase = workspace.WorldBlock[player.Name .. "_base"]
+    if not modelBase then return end
         
     local block = blockUnclone:Clone()
     block.Parent = modelBase
@@ -182,18 +184,18 @@ BlockPlaced.OnServerEvent:Connect(function(player, targetHitPos, targetHitNormal
     local prevPlace = objs.previous_place_cframe or {}
     local pivot = modelBase:GetPivot()
 
-    objs.x = pivot.Position.X
-    objs.y = pivot.Position.Y
-    objs.z = pivot.Position.Z
+    prevPlace.x = pivot.Position.X
+    prevPlace.y = pivot.Position.Y
+    prevPlace.z = pivot.Position.Z
 
-    objs.right_vec = { x = pivot.RightVector.X, y = pivot.RightVector.Y, z = pivot.RightVector.Z }
-    objs.up_vec = { x = pivot.UpVector.X, y = pivot.UpVector.Y, z = pivot.UpVector.Z }
+    prevPlace.right_vec = { x = pivot.RightVector.X, y = pivot.RightVector.Y, z = pivot.RightVector.Z }
+    prevPlace.up_vec = { x = pivot.UpVector.X, y = pivot.UpVector.Y, z = pivot.UpVector.Z }
     
-    datas.obj_count = datas.obj_count + 1 
+    datas.obj_count = (tonumber(datas.obj_count) or 0) + 1 
     
 
     local token, signature = playerData:StartSession(player)
-    local okLock, ownerId = playerData:AcquireSessionLock(user, 5)
+    local okLock, ownerId = playerData:AcquireSessionLock(nil, 5)
     if okLock then
         local ok, err = pcall(function()
             playerData:SaveWithToken(token, datas, signature)
