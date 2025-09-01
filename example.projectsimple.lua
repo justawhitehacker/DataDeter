@@ -55,7 +55,7 @@ Players.PlayerAdded:Connect(function(plr)
         
     -- deserialize objects
     task.spawn(function()
-        for i = 1, data_counts do
+        for i = 1, objectsCount do
             local obj = datas.objects[i]
 
             local pos = Vector3.new(obj.pos.x,    obj.pos.y,    obj.pos.z)
